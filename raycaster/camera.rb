@@ -65,21 +65,19 @@ module Raycaster
     def calculate_walls
       @walls = []
       (1..@resolution[:x]).each do |column|
-        angle = @angles[column]
-        ray = cast(@player.x, @player.y, @player.direction + angle)
-        @walls << calculate_column(column, ray, angle)
+        relative_angle = @angles[column]
+        absolute_angle = @player.direction + relative_angle
+        sin = Math.sin(absolute_angle)
+        cos = Math.cos(absolute_angle)
+        origin = { x: @player.x, y: @player.y, height: 0, distance: 0 }
+        ray = cast(sin, cos, origin)
+        @walls << calculate_column(column, ray, relative_angle)
       end
       @walls.compact!
       @walls
     end
 
-    def cast(x, y, angle)
-      sin = Math.sin(angle)
-      cos = Math.cos(angle)
-      do_cast(sin, cos, { x: x, y: y, height: 0, distance: 0 });
-    end
-
-    def do_cast(sin, cos, origin)
+    def cast(sin, cos, origin)
       step_x = step(sin, cos, origin[:x], origin[:y], false);
       step_y = step(cos, sin, origin[:y], origin[:x], true);
       next_step = if step_x[:length_sq] < step_y[:length_sq]
@@ -90,7 +88,7 @@ module Raycaster
       if next_step[:distance] > @range
         [origin]
       else
-        [origin].concat(do_cast(sin, cos, next_step))
+        [origin].concat(cast(sin, cos, next_step))
       end
     end
 
