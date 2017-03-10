@@ -12,11 +12,17 @@ module Raycaster
     end
 
     def update
-      if @controls.up?
-        walk(3 * 0.05)
+      if @controls.forward?
+        walk(3 * 0.04)
       end
-      if @controls.down?
-        walk(-3 * 0.05)
+      if @controls.backward?
+        walk(-3 * 0.04)
+      end
+      if @controls.strafe_left?
+        strafe(-3 * 0.02)
+      end
+      if @controls.strafe_right?
+        strafe(3 * 0.02)
       end
       if @controls.left?
         rotate(-Math::PI * 0.02)
@@ -31,6 +37,13 @@ module Raycaster
     def walk(distance)
       dx = Math.cos(@direction) * distance
       dy = Math.sin(@direction) * distance
+      @x += dx if @map.get(@x + dx, @y) <= 0
+      @y += dy if @map.get(@x, @y + dy) <= 0
+    end
+
+    def strafe(distance)
+      dx = Math.cos(@direction + Math::PI/2) * distance
+      dy = Math.sin(@direction + Math::PI/2) * distance
       @x += dx if @map.get(@x + dx, @y) <= 0
       @y += dy if @map.get(@x, @y + dy) <= 0
     end
