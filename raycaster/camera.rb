@@ -5,18 +5,35 @@ module Raycaster
       @resolution = window.resolution
       @map = map
       @player = player
+      @old_player = player_hash
       @range = 10
       @focal_length = 0.8
       @spacing = 1
+      @angles = calculate_angles
+      @walls = calculate_walls
     end
 
     def draw
       draw_roof
       draw_floor
+      calculate_walls if player_changed?
       draw_walls
+      save_player
     end
 
     private
+
+    def player_hash
+      { x: @player.x, y: @player.y, direction: @player.direction }
+    end
+
+    def player_changed?
+      @old_player != player_hash
+    end
+
+    def save_player
+      @old_player = player_hash
+    end
 
     def draw_roof
       @window.draw_quad(
@@ -36,13 +53,24 @@ module Raycaster
       )
     end
 
-    def draw_walls
+    def calculate_angles
+      angles = {}
       (1..@resolution[:x]).each do |column|
         x = column.to_f / @resolution[:x] - 0.5
-        angle = Math.atan2(x, @focal_length)
-        ray = cast(@player.x, @player.y, @player.direction + angle)
-        draw_column(column, ray, angle)
+        angles[column] = Math.atan2(x, @focal_length)
       end
+      angles
+    end
+
+    def calculate_walls
+      @walls = []
+      (1..@resolution[:x]).each do |column|
+        angle = @angles[column]
+        ray = cast(@player.x, @player.y, @player.direction + angle)
+        @walls << calculate_column(column, ray, angle)
+      end
+      @walls.compact!
+      @walls
     end
 
     def cast(x, y, angle)
@@ -92,7 +120,8 @@ module Raycaster
       step
     end
 
-    def draw_column(column, ray, angle)
+    def calculate_column(column, ray, angle)
+      line = nil
       left = (column * @spacing).floor
       width = @spacing.ceil
       ray.reverse.each_with_index do |step, i|
@@ -100,12 +129,13 @@ module Raycaster
           wall = project(step[:height], angle, step[:distance])
           brightness = (@range - step[:distance]) / @range
           color = Gosu::Color.from_hsv(215, 0.2, brightness)
-          @window.draw_line(
-            left, wall[:top], color,
-            left, wall[:bottom], color
-          )
+          line = {
+            x1: left, y1: wall[:top], c1: color,
+            x2: left, y2: wall[:bottom], c2: color
+          }
         end
       end
+      line
     end
 
     def project(height, angle, distance)
@@ -118,6 +148,15 @@ module Raycaster
         top: top,
         bottom: bottom
       }
+    end
+
+    def draw_walls
+      @walls.each do |line|
+        @window.draw_line(
+          line[:x1], line[:y1], line[:c1],
+          line[:x2], line[:y2], line[:c2]
+        )
+      end
     end
   end
 end
