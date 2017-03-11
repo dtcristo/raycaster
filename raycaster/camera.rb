@@ -69,28 +69,28 @@ module Raycaster
       (1..@resolution[:x]).each do |column|
         relative_angle = @angles[column]
         absolute_angle = @player.direction + relative_angle
-        sin = Math.sin(absolute_angle)
-        cos = Math.cos(absolute_angle)
+        x_comp = Math.sin(absolute_angle)
+        y_comp = -Math.cos(absolute_angle)
         origin = { x: @player.x, y: @player.y, height: 0, distance: 0 }
-        ray = cast(sin, cos, origin)
+        ray = cast(x_comp, y_comp, origin)
         @walls << calculate_column(column, ray, relative_angle)
       end
       @walls.compact!
       @walls
     end
 
-    def cast(sin, cos, origin)
-      step_x = step(sin, cos, origin[:x], origin[:y], false)
-      step_y = step(cos, sin, origin[:y], origin[:x], true)
+    def cast(x_comp, y_comp, origin)
+      step_x = step(y_comp, x_comp, origin[:x], origin[:y], false)
+      step_y = step(x_comp, y_comp, origin[:y], origin[:x], true)
       next_step = if step_x[:length_sq] < step_y[:length_sq]
-        inspect(sin, cos, step_x, 1, 0, origin[:distance], step_x[:y])
+        inspect(x_comp, y_comp, step_x, 1, 0, origin[:distance], step_x[:y])
       else
-        inspect(sin, cos, step_y, 0, 1, origin[:distance], step_y[:x])
+        inspect(x_comp, y_comp, step_y, 0, 1, origin[:distance], step_y[:x])
       end
       if next_step[:distance] > @range
         [origin]
       else
-        [origin].concat(cast(sin, cos, next_step))
+        [origin].concat(cast(x_comp, y_comp, next_step))
       end
     end
 
@@ -106,27 +106,28 @@ module Raycaster
       }
     end
 
-    def inspect(sin, cos, step, shift_x, shift_y, distance, offset)
-      dx = cos < 0 ? shift_x : 0
-      dy = sin < 0 ? shift_y : 0
+    def inspect(x_comp, y_comp, step, shift_x, shift_y, distance, offset)
+      dx = x_comp < 0 ? shift_x : 0
+      dy = y_comp < 0 ? shift_y : 0
       step[:height] = @map.get(step[:x] - dx, step[:y] - dy)
       step[:distance] = distance + Math.sqrt(step[:length_sq])
-      if (shift_x)
-        step[:shading] = cos < 0 ? 2 : 0
+      # step[:shading] = shift_x
+      if (shift_x == 0)
+        step[:shading] = y_comp > 0 ? :north : :south
       else
-        step[:shading] = sin < 0 ? 2 : 1
+        step[:shading] = x_comp < 0 ? :east : :west
       end
       step[:offset] = offset - offset.floor
       step
     end
 
-    def calculate_column(column, ray, angle)
+    def calculate_column(column, ray, relative_angle)
       line = nil
       left = (column * @spacing).floor
       width = @spacing.ceil
       ray.reverse.each_with_index do |step, i|
         if step[:height] == 1
-          wall = project(step[:height], angle, step[:distance])
+          wall = project(step[:height], relative_angle, step[:distance])
           brightness = ((@range - step[:distance]) / @range) * (1 - 0.2) + 0.2
           color =
             case(step[:shading])

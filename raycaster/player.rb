@@ -35,15 +35,15 @@ module Raycaster
     private
 
     def walk(distance)
-      dx = Math.cos(@direction) * distance
-      dy = Math.sin(@direction) * distance
+      dx = Math.sin(@direction) * distance
+      dy = -Math.cos(@direction) * distance
       @x += dx if @map.get(@x + dx, @y) <= 0
       @y += dy if @map.get(@x, @y + dy) <= 0
     end
 
     def strafe(distance)
-      dx = Math.cos(@direction + Math::PI/2) * distance
-      dy = Math.sin(@direction + Math::PI/2) * distance
+      dx = Math.sin(@direction + Math::PI/2) * distance
+      dy = -Math.cos(@direction + Math::PI/2) * distance
       @x += dx if @map.get(@x + dx, @y) <= 0
       @y += dy if @map.get(@x, @y + dy) <= 0
     end
