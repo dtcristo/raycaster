@@ -37,19 +37,21 @@ module Raycaster
 
     def draw_roof
       @window.draw_quad(
-        0, 0, 0xff_87ceeb,
-        @resolution[:x], 0, 0xff_87ceeb,
-        0, @resolution[:y] / 2, 0xff_000000,
-        @resolution[:x], @resolution[:y] / 2, 0xff_000000, 0
+        0, 0, Gosu::Color.from_hsv(45, 0.5, 1),
+        @resolution[:x], 0, Gosu::Color.from_hsv(45, 0.5, 1),
+        0, @resolution[:y]/2, Gosu::Color.from_hsv(45, 0.5, 0.1),
+        @resolution[:x], @resolution[:y]/2, Gosu::Color.from_hsv(45, 0.5, 0.1),
+        0
       )
     end
 
     def draw_floor
       @window.draw_quad(
-        0, @resolution[:y] / 2, 0xff_000000,
-        @resolution[:x], @resolution[:y] / 2, 0xff_000000,
-        0, @resolution[:y], 0xff_331900,
-        @resolution[:x], @resolution[:y], 0xff_331900, 0
+        0, @resolution[:y]/2, Gosu::Color.from_hsv(90, 0.5, 0.1),
+        @resolution[:x], @resolution[:y]/2, Gosu::Color.from_hsv(90, 0.5, 0.1),
+        0, @resolution[:y], Gosu::Color.from_hsv(90, 0.5, 1),
+        @resolution[:x], @resolution[:y], Gosu::Color.from_hsv(90, 0.5, 1),
+        0
       )
     end
 
@@ -125,8 +127,18 @@ module Raycaster
       ray.reverse.each_with_index do |step, i|
         if step[:height] == 1
           wall = project(step[:height], angle, step[:distance])
-          brightness = (@range - step[:distance]) / @range
-          color = Gosu::Color.from_hsv(215, 0.2, brightness)
+          brightness = ((@range - step[:distance]) / @range) * (1 - 0.2) + 0.2
+          color =
+            case(step[:shading])
+            when :north
+              Gosu::Color.from_hsv(180, 0.5, brightness)
+            when :south
+              Gosu::Color.from_hsv(315, 0.5, brightness)
+            when :east
+              Gosu::Color.from_hsv(225, 0.5, brightness)
+            when :west
+              Gosu::Color.from_hsv(270, 0.5, brightness)
+            end
           line = {
             x1: left, y1: wall[:top], c1: color,
             x2: left, y2: wall[:bottom], c2: color

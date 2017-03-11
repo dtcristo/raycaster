@@ -3,7 +3,7 @@ module Raycaster
     def initialize(player)
       @player = player
       @font = Gosu::Font.new(20)
-      @color = Gosu::Color::YELLOW
+      @color = Gosu::Color::BLACK
     end
 
     def draw
