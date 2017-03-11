@@ -78,8 +78,8 @@ module Raycaster
     end
 
     def cast(sin, cos, origin)
-      step_x = step(sin, cos, origin[:x], origin[:y], false);
-      step_y = step(cos, sin, origin[:y], origin[:x], true);
+      step_x = step(sin, cos, origin[:x], origin[:y], false)
+      step_y = step(cos, sin, origin[:y], origin[:x], true)
       next_step = if step_x[:length_sq] < step_y[:length_sq]
         inspect(sin, cos, step_x, 1, 0, origin[:distance], step_x[:y])
       else
@@ -137,7 +137,7 @@ module Raycaster
     end
 
     def project(height, angle, distance)
-      z = distance * Math.cos(angle);
+      z = distance * Math.cos(angle)
       wall_height = @resolution[:y] * height / z
       mid = @resolution[:y] / 2
       top = mid - (wall_height / 2)
