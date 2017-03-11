@@ -13,22 +13,22 @@ module Raycaster
 
     def update
       if @controls.forward?
-        walk(3 * 0.04)
+        walk(3 * 0.02)
       end
       if @controls.backward?
-        walk(-3 * 0.04)
+        walk(-3 * 0.02)
       end
       if @controls.strafe_left?
-        strafe(-3 * 0.02)
+        strafe(-3 * 0.01)
       end
       if @controls.strafe_right?
-        strafe(3 * 0.02)
+        strafe(3 * 0.01)
       end
       if @controls.left?
-        rotate(-Math::PI * 0.02)
+        rotate(-Math::PI * 0.01)
       end
       if @controls.right?
-        rotate(Math::PI * 0.02)
+        rotate(Math::PI * 0.01)
       end
     end
 
