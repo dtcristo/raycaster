@@ -2,13 +2,13 @@ module Raycaster
   class Camera
     def initialize(window, map, player)
       @window = window
-      @resolution = window.resolution
+      @resolution = { x: 160, y: 120 }
+      @spacing = @window.resolution[:x] / @resolution[:x]
       @map = map
       @player = player
       @old_player = player_hash
       @range = 10
       @focal_length = 0.8
-      @spacing = 1
       @angles = calculate_angles
       @walls = calculate_walls
     end
@@ -37,27 +37,35 @@ module Raycaster
 
     def draw_roof
       @window.draw_quad(
-        0, 0, Gosu::Color.from_hsv(45, 0.5, 1),
-        @resolution[:x], 0, Gosu::Color.from_hsv(45, 0.5, 1),
-        0, @resolution[:y]/2, Gosu::Color.from_hsv(45, 0.5, 0.1),
-        @resolution[:x], @resolution[:y]/2, Gosu::Color.from_hsv(45, 0.5, 0.1),
+        0, 0,
+        Gosu::Color.from_hsv(45, 0.5, 1),
+        @window.resolution[:x], 0,
+        Gosu::Color.from_hsv(45, 0.5, 1),
+        0, @window.resolution[:y]/2,
+        Gosu::Color.from_hsv(45, 0.5, 0.1),
+        @window.resolution[:x], @window.resolution[:y]/2,
+        Gosu::Color.from_hsv(45, 0.5, 0.1),
         0
       )
     end
 
     def draw_floor
       @window.draw_quad(
-        0, @resolution[:y]/2, Gosu::Color.from_hsv(90, 0.5, 0.1),
-        @resolution[:x], @resolution[:y]/2, Gosu::Color.from_hsv(90, 0.5, 0.1),
-        0, @resolution[:y], Gosu::Color.from_hsv(90, 0.5, 1),
-        @resolution[:x], @resolution[:y], Gosu::Color.from_hsv(90, 0.5, 1),
+        0, @window.resolution[:y]/2,
+        Gosu::Color.from_hsv(90, 0.5, 0.1),
+        @window.resolution[:x], @window.resolution[:y]/2,
+        Gosu::Color.from_hsv(90, 0.5, 0.1),
+        0, @window.resolution[:y],
+        Gosu::Color.from_hsv(90, 0.5, 1),
+        @window.resolution[:x], @window.resolution[:y],
+        Gosu::Color.from_hsv(90, 0.5, 1),
         0
       )
     end
 
     def calculate_angles
       angles = {}
-      (1..@resolution[:x]).each do |column|
+      (0..(@resolution[:x]-1)).each do |column|
         x = column.to_f / @resolution[:x] - 0.5
         angles[column] = Math.atan2(x, @focal_length)
       end
@@ -66,14 +74,14 @@ module Raycaster
 
     def calculate_walls
       @walls = []
-      (1..@resolution[:x]).each do |column|
+      (0..(@resolution[:x]-1)).each do |column|
         relative_angle = @angles[column]
         absolute_angle = @player.direction + relative_angle
         x_comp = Math.sin(absolute_angle)
         y_comp = -Math.cos(absolute_angle)
         origin = { x: @player.x, y: @player.y, height: 0, distance: 0 }
         ray = cast(x_comp, y_comp, origin)
-        @walls << calculate_column(column, ray, relative_angle)
+        @walls << calculate_strip(column, ray, relative_angle)
       end
       @walls.compact!
       @walls
@@ -121,8 +129,8 @@ module Raycaster
       step
     end
 
-    def calculate_column(column, ray, relative_angle)
-      line = nil
+    def calculate_strip(column, ray, relative_angle)
+      strip = nil
       left = (column * @spacing).floor
       width = @spacing.ceil
       ray.reverse.each_with_index do |step, i|
@@ -140,19 +148,21 @@ module Raycaster
             when :west
               Gosu::Color.from_hsv(270, 0.5, brightness)
             end
-          line = {
+          strip = {
             x1: left, y1: wall[:top], c1: color,
-            x2: left, y2: wall[:bottom], c2: color
+            x2: left, y2: wall[:bottom], c2: color,
+            x3: left+width, y3: wall[:top], c3: color,
+            x4: left+width, y4: wall[:bottom], c4: color
           }
         end
       end
-      line
+      strip
     end
 
     def project(height, angle, distance)
       z = distance * Math.cos(angle)
-      wall_height = @resolution[:y] * height / z
-      mid = @resolution[:y] / 2
+      wall_height = @window.resolution[:y] * height / z
+      mid = @window.resolution[:y] / 2
       top = mid - (wall_height / 2)
       bottom = mid + (wall_height / 2)
       {
@@ -162,10 +172,12 @@ module Raycaster
     end
 
     def draw_walls
-      @walls.each do |line|
-        @window.draw_line(
-          line[:x1], line[:y1], line[:c1],
-          line[:x2], line[:y2], line[:c2]
+      @walls.each do |strip|
+        @window.draw_quad(
+          strip[:x1], strip[:y1], strip[:c1],
+          strip[:x2], strip[:y2], strip[:c2],
+          strip[:x3], strip[:y3], strip[:c3],
+          strip[:x4], strip[:y4], strip[:c4]
         )
       end
     end
