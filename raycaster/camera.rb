@@ -151,8 +151,8 @@ module Raycaster
           #   end
           strip = {
             x1: left, y1: wall[:top], c1: color,
-            x2: left, y2: wall[:bottom], c2: color,
-            x3: left+width, y3: wall[:top], c3: color,
+            x2: left+width, y2: wall[:top], c2: color,
+            x3: left, y3: wall[:bottom], c3: color,
             x4: left+width, y4: wall[:bottom], c4: color
           }
         end
