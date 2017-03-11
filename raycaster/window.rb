@@ -3,7 +3,7 @@ module Raycaster
     attr_reader :resolution
 
     def initialize
-      @resolution = { x: 640, y: 480 }
+      @resolution = { x: 1280, y: 960 }
       super(@resolution[:x], @resolution[:y])
       self.caption = 'Raycaster'
       @controls = Controls.new
