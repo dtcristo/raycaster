@@ -137,17 +137,18 @@ module Raycaster
         if step[:height] == 1
           wall = project(step[:height], relative_angle, step[:distance])
           brightness = ((@range - step[:distance]) / @range) * (1 - 0.2) + 0.2
-          color =
-            case(step[:shading])
-            when :north
-              Gosu::Color.from_hsv(180, 0.5, brightness)
-            when :south
-              Gosu::Color.from_hsv(315, 0.5, brightness)
-            when :east
-              Gosu::Color.from_hsv(225, 0.5, brightness)
-            when :west
-              Gosu::Color.from_hsv(270, 0.5, brightness)
-            end
+          color = Gosu::Color.from_hsv(step[:offset]*360, 0.6, brightness)
+          # color =
+          #   case(step[:shading])
+          #   when :north
+          #     Gosu::Color.from_hsv(180, 0.5, brightness)
+          #   when :south
+          #     Gosu::Color.from_hsv(315, 0.5, brightness)
+          #   when :east
+          #     Gosu::Color.from_hsv(225, 0.5, brightness)
+          #   when :west
+          #     Gosu::Color.from_hsv(270, 0.5, brightness)
+          #   end
           strip = {
             x1: left, y1: wall[:top], c1: color,
             x2: left, y2: wall[:bottom], c2: color,
