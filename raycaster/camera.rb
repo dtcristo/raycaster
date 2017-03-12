@@ -84,7 +84,7 @@ module Raycaster
         y_comp = -Math.cos(absolute_angle)
         origin = { x: @player.x, y: @player.y, height: 0, distance: 0 }
         ray = cast(x_comp, y_comp, origin)
-        @walls << calculate_strip(column, ray, relative_angle)
+        @walls << calculate_strip(column, relative_angle, ray)
       end
       @walls.compact!
       @walls
@@ -132,37 +132,44 @@ module Raycaster
       step
     end
 
-    def calculate_strip(column, ray, relative_angle)
-      strip = nil
+    def calculate_strip(column, relative_angle, ray)
+      hit = nil
+      ray.reverse.each do |step|
+        hit = step if step[:height] == 1
+      end
+      if hit
+        hit_to_strip(column, relative_angle, hit)
+      else
+        nil
+      end
+    end
+
+    def hit_to_strip(column, relative_angle, hit)
       left = (column * @spacing).floor
       width = @spacing.ceil
-      ray.reverse.each_with_index do |step, i|
-        if step[:height] == 1
-          wall = project(step[:height], relative_angle, step[:distance])
-          brightness = ((@range - step[:distance]) / @range) * (1 - 0.2) + 0.2
-          # color = Gosu::Color.from_hsv(0, 0, brightness)
-          color =
-            case(step[:shading])
-            when :north
-              Gosu::Color.from_hsv(180, 0.2, brightness)
-            when :south
-              Gosu::Color.from_hsv(315, 0.2, brightness)
-            when :east
-              Gosu::Color.from_hsv(225, 0.2, brightness)
-            when :west
-              Gosu::Color.from_hsv(270, 0.2, brightness)
-            end
-          strip = {
-            x1: left, y1: wall[:top], c1: color,
-            x2: left+width, y2: wall[:top], c2: color,
-            x3: left, y3: wall[:bottom], c3: color,
-            x4: left+width, y4: wall[:bottom], c4: color,
-            i_left: (@texture.width*step[:offset]).floor, i_top: 0,
-            i_width: 1, i_height: @texture.height
-          }
+      wall = project(hit[:height], relative_angle, hit[:distance])
+      brightness = ((@range - hit[:distance]) / @range) * (1 - 0.2) + 0.2
+      # brightness = 1
+      color =
+        case(hit[:shading])
+        when :north
+          Gosu::Color.from_hsv(180, 0.2, brightness)
+        when :south
+          Gosu::Color.from_hsv(315, 0.2, brightness)
+        when :east
+          Gosu::Color.from_hsv(225, 0.2, brightness)
+        when :west
+          Gosu::Color.from_hsv(270, 0.2, brightness)
         end
-      end
-      strip
+      # color.alpha = 128
+      {
+        x1: left, y1: wall[:top], c1: color,
+        x2: left+width, y2: wall[:top], c2: color,
+        x3: left, y3: wall[:bottom], c3: color,
+        x4: left+width, y4: wall[:bottom], c4: color,
+        i_left: (@texture.width*hit[:offset]).floor, i_top: 0,
+        i_width: 1, i_height: @texture.height
+      }
     end
 
     def project(height, angle, distance)
@@ -187,7 +194,7 @@ module Raycaster
           strip[:x2], strip[:y2], strip[:c2],
           strip[:x3], strip[:y3], strip[:c3],
           strip[:x4], strip[:y4], strip[:c4],
-          1
+          0
         )
       end
     end
