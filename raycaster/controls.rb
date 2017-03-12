@@ -1,5 +1,16 @@
 module Raycaster
   class Controls
+    
+    # Button mapping for 8Bitdo SFC30 GamePad
+    # Gosu::GP_BUTTON_0  -> B
+    # Gosu::GP_BUTTON_1  -> A
+    # Gosu::GP_BUTTON_2  -> Y
+    # Gosu::GP_BUTTON_3  -> X
+    # Gosu::GP_BUTTON_4  -> SELECT
+    # Gosu::GP_BUTTON_6  -> START
+    # Gosu::GP_BUTTON_9  -> L
+    # Gosu::GP_BUTTON_10 -> R
+
     def forward?
       Gosu.button_down?(Gosu::KB_UP) ||
       Gosu.button_down?(Gosu::KB_W) ||
@@ -37,14 +48,3 @@ module Raycaster
     end
   end
 end
-
-# Button mapping for 8Bitdo SFC30 GamePad
-
-# Gosu::GP_BUTTON_0  -> B
-# Gosu::GP_BUTTON_1  -> A
-# Gosu::GP_BUTTON_2  -> Y
-# Gosu::GP_BUTTON_3  -> X
-# Gosu::GP_BUTTON_4  -> SELECT
-# Gosu::GP_BUTTON_6  -> START
-# Gosu::GP_BUTTON_9  -> L
-# Gosu::GP_BUTTON_10 -> R
