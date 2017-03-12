@@ -22,6 +22,8 @@ module Raycaster
       draw_stats
     end
 
+    private
+
     def draw_map
       Gosu.translate(@map_origin[:x], @map_origin[:y]) do
         # Draw cells
