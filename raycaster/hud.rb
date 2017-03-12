@@ -1,9 +1,10 @@
 module Raycaster
   class Hud
-    def initialize(window, map, player)
+    def initialize(window, map, player, camera)
       @window = window
       @map = map
       @player = player
+      @camera = camera
       @font_size = 24
       @font = Gosu::Font.new(@font_size, name: 'Courier New')
       @color = Gosu::Color::WHITE
@@ -32,6 +33,13 @@ module Raycaster
               @map_scale, @map_scale, Gosu::Color::WHITE
             )
           end
+        end
+        # Draw FOV
+        @camera.rays.each do |ray|
+          Gosu.draw_line(
+            ray[:x1]*@map_scale, ray[:y1]*@map_scale, Gosu::Color::BLUE,
+            ray[:x2]*@map_scale, ray[:y2]*@map_scale, Gosu::Color::BLUE
+          )
         end
         # Draw player
         Gosu.draw_rect(
