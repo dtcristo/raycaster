@@ -10,7 +10,7 @@ module Raycaster
       @map = Map.new
       @player = Player.new(@controls, @map)
       @camera = Camera.new(self, @map, @player)
-      @hud = Hud.new(@player)
+      @hud = Hud.new(self, @map, @player)
     end
 
     def update
