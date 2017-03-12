@@ -9,6 +9,9 @@ module Raycaster
       @old_player = player_hash
       @range = 10
       @focal_length = 0.8
+      @texture = Gosu::Image.new(
+        File.expand_path('../../assets/texture.png', __FILE__), retro: true
+      )
       @angles = calculate_angles
       @walls = calculate_walls
     end
@@ -137,23 +140,25 @@ module Raycaster
         if step[:height] == 1
           wall = project(step[:height], relative_angle, step[:distance])
           brightness = ((@range - step[:distance]) / @range) * (1 - 0.2) + 0.2
-          color = Gosu::Color.from_hsv(step[:offset]*360, 0.6, brightness)
-          # color =
-          #   case(step[:shading])
-          #   when :north
-          #     Gosu::Color.from_hsv(180, 0.5, brightness)
-          #   when :south
-          #     Gosu::Color.from_hsv(315, 0.5, brightness)
-          #   when :east
-          #     Gosu::Color.from_hsv(225, 0.5, brightness)
-          #   when :west
-          #     Gosu::Color.from_hsv(270, 0.5, brightness)
-          #   end
+          # color = Gosu::Color.from_hsv(0, 0, brightness)
+          color =
+            case(step[:shading])
+            when :north
+              Gosu::Color.from_hsv(180, 0.2, brightness)
+            when :south
+              Gosu::Color.from_hsv(315, 0.2, brightness)
+            when :east
+              Gosu::Color.from_hsv(225, 0.2, brightness)
+            when :west
+              Gosu::Color.from_hsv(270, 0.2, brightness)
+            end
           strip = {
             x1: left, y1: wall[:top], c1: color,
             x2: left+width, y2: wall[:top], c2: color,
             x3: left, y3: wall[:bottom], c3: color,
-            x4: left+width, y4: wall[:bottom], c4: color
+            x4: left+width, y4: wall[:bottom], c4: color,
+            i_left: (@texture.width*step[:offset]).floor, i_top: 0,
+            i_width: 1, i_height: @texture.height
           }
         end
       end
@@ -174,11 +179,15 @@ module Raycaster
 
     def draw_walls
       @walls.each do |strip|
-        @window.draw_quad(
+        texture_strip = @texture.subimage(
+          strip[:i_left], strip[:i_top], strip[:i_width], strip[:i_height]
+        )
+        texture_strip.draw_as_quad(
           strip[:x1], strip[:y1], strip[:c1],
           strip[:x2], strip[:y2], strip[:c2],
           strip[:x3], strip[:y3], strip[:c3],
-          strip[:x4], strip[:y4], strip[:c4]
+          strip[:x4], strip[:y4], strip[:c4],
+          1
         )
       end
     end
