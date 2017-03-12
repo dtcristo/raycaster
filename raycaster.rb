@@ -1,5 +1,6 @@
 require 'gosu'
 require 'pry'
+require 'awesome_print'
 
 require_relative 'raycaster/camera'
 require_relative 'raycaster/controls'
