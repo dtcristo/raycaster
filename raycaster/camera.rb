@@ -17,7 +17,7 @@ module Raycaster
     end
 
     def draw
-      draw_roof
+      # draw_roof
       draw_floor
       calculate_walls if player_changed?
       draw_walls
@@ -55,13 +55,13 @@ module Raycaster
     def draw_floor
       @window.draw_quad(
         0, @window.resolution[:y]/2,
-        Gosu::Color.from_hsv(90, 0.5, 0.1),
+        Gosu::Color::BLACK,
         @window.resolution[:x], @window.resolution[:y]/2,
-        Gosu::Color.from_hsv(90, 0.5, 0.1),
+        Gosu::Color::BLACK,
         0, @window.resolution[:y],
-        Gosu::Color.from_hsv(90, 0.5, 1),
+        Gosu::Color::WHITE,
         @window.resolution[:x], @window.resolution[:y],
-        Gosu::Color.from_hsv(90, 0.5, 1),
+        Gosu::Color::WHITE,
         0
       )
     end
@@ -162,13 +162,42 @@ module Raycaster
           Gosu::Color.from_hsv(270, 0.2, brightness)
         end
       # color.alpha = 128
+
+      # roof_quad = nil
+      # if wall[:top] > 0
+      #   c1 = Gosu::Color::WHITE
+      #   c2 = Gosu::Color::BLACK
+      #   bottom = wall[:top]
+      #   roof_quad = {
+      #     x1: left, y1: 0, c1: c1,
+      #     x2: left+width, y2: 0, c2: c1,
+      #     x3: left, y3: bottom, c3: c2,
+      #     x4: left+width, y4: bottom, c4: c2
+      #   }
+      # end
+
+      floor_quad = nil
+      if wall[:bottom] < @window.resolution[:y]
+        c1 = Gosu::Color::BLACK
+        c2 = Gosu::Color::WHITE
+        top = wall[:bottom]
+        floor_quad = {
+          x1: left, y1: top, c1: c1,
+          x2: left+width, y2: top, c2: c1,
+          x3: left, y3: @window.resolution[:y], c3: c2,
+          x4: left+width, y4: @window.resolution[:y], c4: c2
+        }
+      end
+
       {
         x1: left, y1: wall[:top], c1: color,
         x2: left+width, y2: wall[:top], c2: color,
         x3: left, y3: wall[:bottom], c3: color,
         x4: left+width, y4: wall[:bottom], c4: color,
         i_left: (@texture.width*hit[:offset]).floor, i_top: 0,
-        i_width: 1, i_height: @texture.height
+        i_width: 1, i_height: @texture.height,
+        # roof_quad: roof_quad,
+        floor_quad: floor_quad
       }
     end
 
@@ -196,6 +225,24 @@ module Raycaster
           strip[:x4], strip[:y4], strip[:c4],
           0
         )
+        # roof_quad = strip[:roof_quad]
+        # if roof_quad
+        #   @window.draw_quad(
+        #     roof_quad[:x1], roof_quad[:y1], roof_quad[:c1],
+        #     roof_quad[:x2], roof_quad[:y2], roof_quad[:c2],
+        #     roof_quad[:x3], roof_quad[:y3], roof_quad[:c3],
+        #     roof_quad[:x4], roof_quad[:y4], roof_quad[:c4]
+        #   )
+        # end
+        floor_quad = strip[:floor_quad]
+        if floor_quad
+          @window.draw_quad(
+            floor_quad[:x1], floor_quad[:y1], floor_quad[:c1],
+            floor_quad[:x2], floor_quad[:y2], floor_quad[:c2],
+            floor_quad[:x3], floor_quad[:y3], floor_quad[:c3],
+            floor_quad[:x4], floor_quad[:y4], floor_quad[:c4]
+          )
+        end
       end
     end
   end
