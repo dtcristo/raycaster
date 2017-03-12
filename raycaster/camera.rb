@@ -1,5 +1,7 @@
 module Raycaster
   class Camera
+    attr_reader :rays
+
     def initialize(window, map, player)
       @window = window
       @resolution = { x: 160, y: 120 }
@@ -12,14 +14,14 @@ module Raycaster
       @texture = Gosu::Image.new(
         File.expand_path('../../assets/texture.png', __FILE__), retro: true
       )
-      @angles = calculate_angles
-      @walls = calculate_walls
+      calculate_angles
+      calculate_rays_and_walls
     end
 
     def draw
       # draw_roof
       draw_floor
-      calculate_walls if player_changed?
+      calculate_rays_and_walls if player_changed?
       draw_walls
       save_player
     end
@@ -67,15 +69,15 @@ module Raycaster
     end
 
     def calculate_angles
-      angles = {}
+      @angles = {}
       (0..@resolution[:x]-1).each do |column|
         x = column.to_f / @resolution[:x] - 0.5
-        angles[column] = Math.atan2(x, @focal_length)
+        @angles[column] = Math.atan2(x, @focal_length)
       end
-      angles
     end
 
-    def calculate_walls
+    def calculate_rays_and_walls
+      @rays = []
       @walls = []
       (0..@resolution[:x]-1).each do |column|
         relative_angle = @angles[column]
@@ -83,26 +85,29 @@ module Raycaster
         x_comp = Math.sin(absolute_angle)
         y_comp = -Math.cos(absolute_angle)
         origin = { x: @player.x, y: @player.y, height: 0, distance: 0 }
-        ray = cast(x_comp, y_comp, origin)
+        ray = cast(x_comp, y_comp, [origin])
+        @rays << {
+          x1: ray.first[:x], y1: ray.first[:y],
+          x2: ray.last[:x], y2: ray.last[:y]
+        }
         @walls << calculate_strip(column, relative_angle, ray)
       end
       @walls.compact!
-      @walls
     end
 
-    def cast(x_comp, y_comp, origin)
-      step_x = step(y_comp, x_comp, origin[:x], origin[:y], false)
-      step_y = step(x_comp, y_comp, origin[:y], origin[:x], true)
+    def cast(x_comp, y_comp, steps)
+      last_step = steps.last
+      step_x = step(y_comp, x_comp, last_step[:x], last_step[:y], false)
+      step_y = step(x_comp, y_comp, last_step[:y], last_step[:x], true)
       next_step = if step_x[:length_sq] < step_y[:length_sq]
-        inspect(x_comp, y_comp, step_x, 1, 0, origin[:distance], step_x[:y])
+        inspect(x_comp, y_comp, step_x, 1, 0, last_step[:distance], step_x[:y])
       else
-        inspect(x_comp, y_comp, step_y, 0, 1, origin[:distance], step_y[:x])
+        inspect(x_comp, y_comp, step_y, 0, 1, last_step[:distance], step_y[:x])
       end
-      if next_step[:distance] > @range
-        [origin]
-      else
-        [origin].concat(cast(x_comp, y_comp, next_step))
-      end
+      return steps if next_step[:distance] > @range # Range reached, end cast
+      steps << next_step
+      return steps if next_step[:height] > 0 # Hit wall, end cast
+      cast(x_comp, y_comp, steps) # No collision, continue cast
     end
 
     def step(rise, run, x, y, inverted)
@@ -122,7 +127,6 @@ module Raycaster
       dy = y_comp < 0 ? shift_y : 0
       step[:height] = @map.get(step[:x] - dx, step[:y] - dy)
       step[:distance] = distance + Math.sqrt(step[:length_sq])
-      # step[:shading] = shift_x
       if (shift_x == 0)
         step[:shading] = y_comp > 0 ? :north : :south
       else
