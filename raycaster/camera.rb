@@ -180,7 +180,7 @@ module Raycaster
       if wall[:bottom] < @window.resolution[:y]
         c1 = Gosu::Color::BLACK
         c2 = Gosu::Color::WHITE
-        top = wall[:bottom]
+        top = wall[:bottom].floor
         floor_quad = {
           x1: left, y1: top, c1: c1,
           x2: left+width, y2: top, c2: c1,
