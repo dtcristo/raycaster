@@ -5,10 +5,9 @@ module Raycaster
     def initialize(controls, map)
       @controls = controls
       @map = map
-      spawn_point = map.spawn_point
-      @x = spawn_point[:x]
-      @y = spawn_point[:y]
-      @direction = spawn_point[:direction]
+      @x = @map.spawn_point[:x]
+      @y = @map.spawn_point[:y]
+      @direction = @map.spawn_point[:direction]
     end
 
     def update

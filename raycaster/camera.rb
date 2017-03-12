@@ -68,7 +68,7 @@ module Raycaster
 
     def calculate_angles
       angles = {}
-      (0..(@resolution[:x]-1)).each do |column|
+      (0..@resolution[:x]-1).each do |column|
         x = column.to_f / @resolution[:x] - 0.5
         angles[column] = Math.atan2(x, @focal_length)
       end
@@ -77,7 +77,7 @@ module Raycaster
 
     def calculate_walls
       @walls = []
-      (0..(@resolution[:x]-1)).each do |column|
+      (0..@resolution[:x]-1).each do |column|
         relative_angle = @angles[column]
         absolute_angle = @player.direction + relative_angle
         x_comp = Math.sin(absolute_angle)
