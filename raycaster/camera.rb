@@ -19,10 +19,10 @@ module Raycaster
     end
 
     def draw
+      calculate_rays_and_walls if player_changed?
       # draw_roof
       draw_floor
-      calculate_rays_and_walls if player_changed?
-      draw_walls
+      # draw_walls
       save_player
     end
 
@@ -40,39 +40,24 @@ module Raycaster
       @old_player = player_hash
     end
 
-    def draw_roof
-      @window.draw_quad(
-        0, 0,
-        Gosu::Color.from_hsv(45, 0.5, 1),
-        @window.resolution[:x], 0,
-        Gosu::Color.from_hsv(45, 0.5, 1),
-        0, @window.resolution[:y]/2,
-        Gosu::Color.from_hsv(45, 0.5, 0.1),
-        @window.resolution[:x], @window.resolution[:y]/2,
-        Gosu::Color.from_hsv(45, 0.5, 0.1),
-        0
-      )
-    end
-
-    def draw_floor
-      @window.draw_quad(
-        0, @window.resolution[:y]/2,
-        Gosu::Color::BLACK,
-        @window.resolution[:x], @window.resolution[:y]/2,
-        Gosu::Color::BLACK,
-        0, @window.resolution[:y],
-        Gosu::Color::WHITE,
-        @window.resolution[:x], @window.resolution[:y],
-        Gosu::Color::WHITE,
-        0
-      )
-    end
-
     def calculate_angles
       @angles = {}
+      @floor_coordinates = {}
+      mid = @window.resolution[:y] / 2
       (0..@resolution[:x]-1).each do |column|
-        x = column.to_f / @resolution[:x] - 0.5
-        @angles[column] = Math.atan2(x, @focal_length)
+        x_scaled = column.to_f / @resolution[:x] - 0.5
+        relative_angle = Math.atan2(x_scaled, @focal_length)
+        @angles[column] = relative_angle
+        (mid..@window.resolution[:y]-1).each do |row|
+          wall_height = 2 * (row.to_f - mid)
+          next if wall_height <= 0
+          relative_y = @window.resolution[:y] / wall_height
+          distance = relative_y / Math.cos(relative_angle)
+          relative_x = distance * Math.sin(relative_angle)
+          @floor_coordinates[[column, row]] = {
+            distance: distance, x: relative_x, y: relative_y
+          }
+        end
       end
     end
 
@@ -245,6 +230,34 @@ module Raycaster
           )
         end
       end
+    end
+
+    def draw_roof
+      @window.draw_quad(
+        0, 0,
+        Gosu::Color.from_hsv(45, 0.5, 1),
+        @window.resolution[:x], 0,
+        Gosu::Color.from_hsv(45, 0.5, 1),
+        0, @window.resolution[:y]/2,
+        Gosu::Color.from_hsv(45, 0.5, 0.1),
+        @window.resolution[:x], @window.resolution[:y]/2,
+        Gosu::Color.from_hsv(45, 0.5, 0.1),
+        0
+      )
+    end
+
+    def draw_floor
+      @window.draw_quad(
+        0, @window.resolution[:y]/2,
+        Gosu::Color::BLACK,
+        @window.resolution[:x], @window.resolution[:y]/2,
+        Gosu::Color::BLACK,
+        0, @window.resolution[:y],
+        Gosu::Color::WHITE,
+        @window.resolution[:x], @window.resolution[:y],
+        Gosu::Color::WHITE,
+        0
+      )
     end
   end
 end
