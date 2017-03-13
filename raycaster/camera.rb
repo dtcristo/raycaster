@@ -5,7 +5,8 @@ module Raycaster
     def initialize(window, map, player)
       @window = window
       @resolution = { x: 160, y: 120 }
-      @spacing = @window.resolution[:x] / @resolution[:x]
+      @column_spacing = @window.resolution[:x] / @resolution[:x]
+      @row_spacing = @window.resolution[:y] / @resolution[:y]
       @map = map
       @player = player
       @old_player = player_hash
@@ -15,11 +16,11 @@ module Raycaster
         File.expand_path('../../assets/texture.png', __FILE__), retro: true
       )
       calculate_angles
-      calculate_rays_and_walls
+      # calculate_rays_and_walls
     end
 
     def draw
-      calculate_rays_and_walls if player_changed?
+      # calculate_rays_and_walls if player_changed?
       # draw_roof
       draw_floor
       # draw_walls
@@ -43,16 +44,16 @@ module Raycaster
     def calculate_angles
       @angles = {}
       @floor_coordinates = {}
-      mid = @window.resolution[:y] / 2
+      mid = @resolution[:y] / 2
       (0..@resolution[:x]-1).each do |column|
         x_scaled = column.to_f / @resolution[:x] - 0.5
         relative_angle = Math.atan2(x_scaled, @focal_length)
         @angles[column] = relative_angle
-        (mid..@window.resolution[:y]-1).each do |row|
+        (mid..@resolution[:y]-1).each do |row|
           wall_height = 2 * (row.to_f - mid)
           next if wall_height <= 0
-          relative_y = @window.resolution[:y] / wall_height
-          distance = relative_y / Math.cos(relative_angle)
+          relative_y = -@resolution[:y] / wall_height
+          distance = -relative_y / Math.cos(relative_angle)
           relative_x = distance * Math.sin(relative_angle)
           @floor_coordinates[[column, row]] = {
             distance: distance, x: relative_x, y: relative_y
@@ -131,8 +132,8 @@ module Raycaster
     end
 
     def hit_to_strip(column, relative_angle, hit)
-      left = (column * @spacing).floor
-      width = @spacing.ceil
+      left = (column * @column_spacing).floor
+      width = @column_spacing.ceil
       wall = project(hit[:height], relative_angle, hit[:distance])
       brightness = ((@range - hit[:distance]) / @range) * (1 - 0.2) + 0.2
       # brightness = 1
@@ -247,17 +248,41 @@ module Raycaster
     end
 
     def draw_floor
-      @window.draw_quad(
-        0, @window.resolution[:y]/2,
-        Gosu::Color::BLACK,
-        @window.resolution[:x], @window.resolution[:y]/2,
-        Gosu::Color::BLACK,
-        0, @window.resolution[:y],
-        Gosu::Color::WHITE,
-        @window.resolution[:x], @window.resolution[:y],
-        Gosu::Color::WHITE,
-        0
-      )
+      mid = @resolution[:y] / 2
+      bottom = @resolution[:y] - 1
+      0.upto(@resolution[:x]-1).each do |column|
+        bottom.downto(mid).each do |row|
+          floor = @floor_coordinates[[column, row]]
+          if floor.nil?
+            Gosu.draw_rect(
+              column * @column_spacing, row * @row_spacing,
+              @column_spacing, @row_spacing, Gosu::Color::GREEN
+            )
+            next
+          end
+          height = @map.get(
+            @player.x + floor[:x], @player.y + floor[:y]
+          )
+          if height > 0
+            Gosu.draw_rect(
+              column * @column_spacing, row * @row_spacing,
+              @column_spacing, @row_spacing, Gosu::Color::BLUE
+            )
+            break
+          else
+            Gosu.draw_rect(
+              column * @column_spacing, row * @row_spacing,
+              @column_spacing, @row_spacing, Gosu::Color::RED
+            )
+          end
+
+          # @floor_coordinates[[column, row]] = {
+          #   distance: distance, x: relative_x, y: relative_y
+          # }
+          # point = @floor_coordinates[[column, row]]
+
+        end
+      end
     end
   end
 end

@@ -18,7 +18,7 @@ module Raycaster
     end
 
     def draw
-      draw_map
+      # draw_map
       draw_stats
     end
 
