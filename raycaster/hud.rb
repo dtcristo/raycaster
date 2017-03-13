@@ -39,8 +39,10 @@ module Raycaster
         # Draw FOV
         @camera.rays.each do |ray|
           Gosu.draw_line(
-            ray[:x1]*@map_scale, ray[:y1]*@map_scale, Gosu::Color::BLUE,
-            ray[:x2]*@map_scale, ray[:y2]*@map_scale, Gosu::Color::BLUE
+            ray.first[:x]*@map_scale, ray.first[:y]*@map_scale,
+            Gosu::Color::BLUE,
+            ray.last[:x]*@map_scale, ray.last[:y]*@map_scale,
+            Gosu::Color::BLUE
           )
         end
         # Draw player

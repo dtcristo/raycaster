@@ -86,10 +86,7 @@ module Raycaster
         y_comp = -Math.cos(absolute_angle)
         origin = { x: @player.x, y: @player.y, height: 0, distance: 0 }
         ray = cast(x_comp, y_comp, [origin])
-        @rays << {
-          x1: ray.first[:x], y1: ray.first[:y],
-          x2: ray.last[:x], y2: ray.last[:y]
-        }
+        @rays << ray
         @walls << calculate_strip(column, relative_angle, ray)
       end
       @walls.compact!
