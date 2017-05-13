@@ -1,6 +1,26 @@
 # 🔆 Raycaster
 
-Experimental raycasting game engine written in Ruby.
+Experimental ray casting game engine written in Ruby using [Gosu](https://www.libgosu.org/).
+
+![Screenshot](https://raw.github.com/dtcristo/raycaster/master/assets/screenshot.png)
+
+## Installation
+
+Install Gosu dependencies (macOS).
+
+    $ brew install sdl2
+
+For Linux dependencies, read [Getting Started on Linux](https://github.com/gosu/gosu/wiki/Getting-Started-on-Linux).
+
+Install gems.
+
+    $ bundle install
+
+Start.
+
+    $ ruby raycaster.rb
+
+Use WASD or arrows to move.
 
 ## Credits
 
