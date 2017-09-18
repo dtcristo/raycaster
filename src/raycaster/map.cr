@@ -1,6 +1,6 @@
 module Raycaster
   class Map
-    attr_reader :size
+    getter :size
 
 # Coordinate system:
 #
@@ -37,8 +37,8 @@ module Raycaster
     end
 
     def get(x, y)
-      x = x.floor
-      y = y.floor
+      x = x.floor.to_i
+      y = y.floor.to_i
       if x < 0 || x > @size - 1 || y < 0 || y > @size - 1
         -1 # Outside of grid
       else

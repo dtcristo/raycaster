@@ -6,7 +6,7 @@ module Raycaster
       @player = player
       @camera = camera
       @font_size = 24
-      @font = Gosu::Font.new(@font_size, name: 'Courier New')
+      @font = Gosu::Font.new(@font_size, name: "Courier New")
       @color = Gosu::Color::WHITE
       @map_scale = 10
       @map_origin = {
@@ -22,9 +22,7 @@ module Raycaster
       draw_stats
     end
 
-    private
-
-    def draw_map
+    private def draw_map
       Gosu.translate(@map_origin[:x], @map_origin[:y]) do
         # Draw cells
         (0..@map.size-1).each do |x|
@@ -54,7 +52,7 @@ module Raycaster
       end
     end
 
-    def draw_stats
+    private def draw_stats
       Gosu.translate(20, 20) do
         x = @player.x.round(1)
         y = @player.y.round(1)

@@ -1,6 +1,12 @@
 module Raycaster
   class Player
-    attr_reader :x, :y, :direction
+    getter :x, :y, :direction
+
+    @controls : Controls
+    @map : Map
+    @x : Float64
+    @y : Float64
+    @direction : Float64
 
     def initialize(controls, map)
       @controls = controls
@@ -31,23 +37,21 @@ module Raycaster
       end
     end
 
-    private
-
-    def walk(distance)
+    private def walk(distance)
       dx = Math.sin(@direction) * distance
       dy = -Math.cos(@direction) * distance
       @x += dx if @map.get(@x + dx, @y) <= 0
       @y += dy if @map.get(@x, @y + dy) <= 0
     end
 
-    def strafe(distance)
+    private def strafe(distance)
       dx = Math.sin(@direction + Math::PI/2) * distance
       dy = -Math.cos(@direction + Math::PI/2) * distance
       @x += dx if @map.get(@x + dx, @y) <= 0
       @y += dy if @map.get(@x, @y + dy) <= 0
     end
 
-    def rotate(angle)
+    private def rotate(angle)
       @direction = (direction + angle + 2*Math::PI) % (2*Math::PI)
     end
   end

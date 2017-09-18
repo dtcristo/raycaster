@@ -1,15 +1,8 @@
-require 'gosu'
-require 'pry'
-require 'awesome_print'
+require "./raycaster/*"
 
-require_relative 'raycaster/camera'
-require_relative 'raycaster/controls'
-require_relative 'raycaster/hud'
-require_relative 'raycaster/map'
-require_relative 'raycaster/player'
-require_relative 'raycaster/window'
+require "crsfml"
 
 module Raycaster
 end
 
-Raycaster::Window.new.show
+Raycaster::Window.new.run

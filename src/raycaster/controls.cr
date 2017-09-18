@@ -1,6 +1,6 @@
 module Raycaster
   class Controls
-    
+
     # Button mapping for 8Bitdo SFC30 GamePad
     # Gosu::GP_BUTTON_0  -> B
     # Gosu::GP_BUTTON_1  -> A
