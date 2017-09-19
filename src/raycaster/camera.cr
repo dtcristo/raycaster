@@ -1,6 +1,30 @@
 module Raycaster
   class Camera
-    attr_reader :rays
+    getter :rays
+
+    @window : Window
+    @spacing : Int32
+    @map : Map
+    @player : Player
+    @old_player : NamedTuple(x: Float64, y: Float64, direction: Float64)
+
+    alias Floor = NamedTuple(
+      x1: Int32, y1: Int32, c1: SF::Color,
+      x2: Int32, y2: Int32, c2: SF::Color,
+      x3: Int32, y3: Int32, c3: SF::Color,
+      x4: Int32, y4: Int32, c4: SF::Color
+    )
+
+    alias Wall = NamedTuple(
+      x1: Int32, y1: Int32, c1: SF::Color,
+      x2: Int32, y2: Int32, c2: SF::Color,
+      x3: Int32, y3: Int32, c3: SF::Color,
+      x4: Int32, y4: Int32, c4: SF::Color,
+      i_left: Int32, i_top: Int32,
+      i_width: Int32, i_height: Int32,
+      # roof_quad: roof_quad,
+      floor_quad: Floor?
+    )
 
     def initialize(window, map, player)
       @window = window
@@ -11,10 +35,12 @@ module Raycaster
       @old_player = player_hash
       @range = 10
       @focal_length = 0.8
-      @texture = Gosu::Image.new(
-        File.expand_path('../../assets/texture.png', __FILE__), retro: true
-      )
+      @texture_width, @texture_height = 128, 128
+      @texture = SF::Texture.from_file("assets/texture.png", SF.int_rect(0, 0, @texture_width, @texture_height))
+      @angles = {} of Int32 => Float64
       calculate_angles
+      @rays = [] of Array(InspectedStep)
+      @walls = [] of Wall?
       calculate_rays_and_walls
     end
 
@@ -26,74 +52,73 @@ module Raycaster
       save_player
     end
 
-    private
-
-    def player_hash
+    private def player_hash
       { x: @player.x, y: @player.y, direction: @player.direction }
     end
 
-    def player_changed?
+    private def player_changed?
       @old_player != player_hash
     end
 
-    def save_player
+    private def save_player
       @old_player = player_hash
     end
 
-    def draw_roof
-      @window.draw_quad(
-        0, 0,
-        Gosu::Color.from_hsv(45, 0.5, 1),
-        @window.resolution[:x], 0,
-        Gosu::Color.from_hsv(45, 0.5, 1),
-        0, @window.resolution[:y]/2,
-        Gosu::Color.from_hsv(45, 0.5, 0.1),
-        @window.resolution[:x], @window.resolution[:y]/2,
-        Gosu::Color.from_hsv(45, 0.5, 0.1),
-        0
-      )
+    private def draw_roof
+      # @window.draw_quad(
+      #   0, 0,
+      #   Gosu::Color.from_hsv(45, 0.5, 1),
+      #   @window.resolution[:x], 0,
+      #   Gosu::Color.from_hsv(45, 0.5, 1),
+      #   0, @window.resolution[:y]/2,
+      #   Gosu::Color.from_hsv(45, 0.5, 0.1),
+      #   @window.resolution[:x], @window.resolution[:y]/2,
+      #   Gosu::Color.from_hsv(45, 0.5, 0.1),
+      #   0
+      # )
     end
 
-    def draw_floor
-      @window.draw_quad(
-        0, @window.resolution[:y]/2,
-        Gosu::Color::BLACK,
-        @window.resolution[:x], @window.resolution[:y]/2,
-        Gosu::Color::BLACK,
-        0, @window.resolution[:y],
-        Gosu::Color::WHITE,
-        @window.resolution[:x], @window.resolution[:y],
-        Gosu::Color::WHITE,
-        0
-      )
+    private def draw_floor
+      # @window.draw_quad(
+      #   0, @window.resolution[:y]/2,
+      #   Gosu::Color::BLACK,
+      #   @window.resolution[:x], @window.resolution[:y]/2,
+      #   Gosu::Color::BLACK,
+      #   0, @window.resolution[:y],
+      #   Gosu::Color::WHITE,
+      #   @window.resolution[:x], @window.resolution[:y],
+      #   Gosu::Color::WHITE,
+      #   0
+      # )
     end
 
-    def calculate_angles
-      @angles = {}
+    private def calculate_angles
       (0..@resolution[:x]-1).each do |column|
         x = column.to_f / @resolution[:x] - 0.5
         @angles[column] = Math.atan2(x, @focal_length)
       end
     end
 
-    def calculate_rays_and_walls
-      @rays = []
-      @walls = []
+    private def calculate_rays_and_walls
+      @rays = [] of Array(InspectedStep)
+      @walls = [] of Wall?
       (0..@resolution[:x]-1).each do |column|
         relative_angle = @angles[column]
         absolute_angle = @player.direction + relative_angle
         x_comp = Math.sin(absolute_angle)
         y_comp = -Math.cos(absolute_angle)
-        origin = { x: @player.x, y: @player.y, height: 0, distance: 0 }
-        ray = cast(x_comp, y_comp, [origin])
+        initial_steps = [] of InspectedStep
+        # origin
+        initial_steps << { x: @player.x, y: @player.y, length_sq: 0_f64, height: 0, distance: 0_f64, shading: :north, offset: 0_f64 }
+        ray = cast(x_comp, y_comp, initial_steps)
         @rays << ray
         @walls << calculate_strip(column, relative_angle, ray)
       end
       @walls.compact!
     end
 
-    def cast(x_comp, y_comp, steps)
-      last_step = steps.last
+    private def cast(x_comp, y_comp, inspected_steps) : Array(InspectedStep)
+      last_step = inspected_steps.last
       step_x = step(y_comp, x_comp, last_step[:x], last_step[:y], false)
       step_y = step(x_comp, y_comp, last_step[:y], last_step[:x], true)
       next_step = if step_x[:length_sq] < step_y[:length_sq]
@@ -101,15 +126,17 @@ module Raycaster
       else
         inspect(x_comp, y_comp, step_y, 0, 1, last_step[:distance], step_y[:x])
       end
-      return steps if next_step[:distance] > @range # Range reached, end cast
-      steps << next_step
-      return steps if next_step[:height] > 0 # Hit wall, end cast
-      cast(x_comp, y_comp, steps) # No collision, continue cast
+      return inspected_steps if next_step[:distance] > @range # Range reached, end cast
+      inspected_steps << next_step
+      return inspected_steps if next_step[:height] > 0 # Hit wall, end cast
+      cast(x_comp, y_comp, inspected_steps) # No collision, continue cast
     end
 
-    def step(rise, run, x, y, inverted)
+    alias Step = NamedTuple(x: Float64, y: Float64, length_sq: Float64)
+
+    private def step(rise, run, x, y, inverted) : Step
       # Handle possible divide by zero
-      return { length_sq: Float::INFINITY } if run == 0
+      return { x: 0_f64, y: 0_f64, length_sq: Float64::INFINITY } if run == 0
       dx = run > 0 ? (x + 1).floor - x : (x - 1).ceil - x
       dy = dx * (rise / run)
       {
@@ -119,21 +146,23 @@ module Raycaster
       }
     end
 
-    def inspect(x_comp, y_comp, step, shift_x, shift_y, distance, offset)
+    alias InspectedStep = NamedTuple(x: Float64, y: Float64, length_sq: Float64, height: Int32, distance: Float64, shading: Symbol, offset: Float64)
+
+    private def inspect(x_comp, y_comp, step : Step, shift_x, shift_y, distance, offset) : InspectedStep
       dx = x_comp < 0 ? shift_x : 0
       dy = y_comp < 0 ? shift_y : 0
-      step[:height] = @map.get(step[:x] - dx, step[:y] - dy)
-      step[:distance] = distance + Math.sqrt(step[:length_sq])
-      if (shift_x == 0)
-        step[:shading] = y_comp > 0 ? :north : :south
+      height = @map.get(step[:x] - dx, step[:y] - dy)
+      new_distance = distance + Math.sqrt(step[:length_sq])
+      shading = if (shift_x == 0)
+        y_comp > 0 ? :north : :south
       else
-        step[:shading] = x_comp < 0 ? :east : :west
+        x_comp < 0 ? :east : :west
       end
-      step[:offset] = offset - offset.floor
-      step
+      new_offset = offset - offset.floor
+      { x: step[:x], y: step[:y], length_sq: step[:length_sq], height: height, distance: new_distance, shading: shading, offset: new_offset }
     end
 
-    def calculate_strip(column, relative_angle, ray)
+    private def calculate_strip(column, relative_angle, ray) : Wall?
       hit = nil
       ray.reverse.each do |step|
         hit = step if step[:height] == 1
@@ -145,7 +174,7 @@ module Raycaster
       end
     end
 
-    def hit_to_strip(column, relative_angle, hit)
+    private def hit_to_strip(column, relative_angle, hit) : Wall
       left = (column * @spacing).floor
       width = @spacing.ceil
       wall = project(hit[:height], relative_angle, hit[:distance])
@@ -154,13 +183,19 @@ module Raycaster
       color =
         case(hit[:shading])
         when :north
-          Gosu::Color.from_hsv(180, 0.2, brightness)
+          # Gosu::Color.from_hsv(180, 0.2, brightness)
+          SF::Color::Red
         when :south
-          Gosu::Color.from_hsv(315, 0.2, brightness)
+          # Gosu::Color.from_hsv(315, 0.2, brightness)
+          SF::Color::Green
         when :east
-          Gosu::Color.from_hsv(225, 0.2, brightness)
+          # Gosu::Color.from_hsv(225, 0.2, brightness)
+          SF::Color::Blue
         when :west
-          Gosu::Color.from_hsv(270, 0.2, brightness)
+          # Gosu::Color.from_hsv(270, 0.2, brightness)
+          SF::Color::Yellow
+        else
+          SF::Color::White
         end
       # color.alpha = 128
 
@@ -179,8 +214,8 @@ module Raycaster
 
       floor_quad = nil
       if wall[:bottom] < @window.resolution[:y]
-        c1 = Gosu::Color::BLACK
-        c2 = Gosu::Color::WHITE
+        c1 = SF::Color::Black
+        c2 = SF::Color::White
         top = wall[:bottom].floor
         floor_quad = {
           x1: left, y1: top, c1: c1,
@@ -195,54 +230,57 @@ module Raycaster
         x2: left+width, y2: wall[:top], c2: color,
         x3: left, y3: wall[:bottom], c3: color,
         x4: left+width, y4: wall[:bottom], c4: color,
-        i_left: (@texture.width*hit[:offset]).floor, i_top: 0,
-        i_width: 1, i_height: @texture.height,
+        i_left: (@texture_width*hit[:offset]).floor.to_i, i_top: 0,
+        i_width: 1, i_height: @texture_height,
         # roof_quad: roof_quad,
         floor_quad: floor_quad
       }
     end
 
-    def project(height, angle, distance)
+    private def project(height, angle, distance)
       z = distance * Math.cos(angle)
       wall_height = @window.resolution[:y] * height / z
       mid = @window.resolution[:y] / 2
       top = mid - (wall_height / 2)
       bottom = mid + (wall_height / 2)
       {
-        top: top,
-        bottom: bottom
+        top: top.to_i,
+        bottom: bottom.to_i
       }
     end
 
-    def draw_walls
-      @walls.each do |strip|
-        texture_strip = @texture.subimage(
-          strip[:i_left], strip[:i_top], strip[:i_width], strip[:i_height]
-        )
-        texture_strip.draw_as_quad(
-          strip[:x1], strip[:y1], strip[:c1],
-          strip[:x2], strip[:y2], strip[:c2],
-          strip[:x3], strip[:y3], strip[:c3],
-          strip[:x4], strip[:y4], strip[:c4],
-          0
-        )
-        # roof_quad = strip[:roof_quad]
-        # if roof_quad
-        #   @window.draw_quad(
-        #     roof_quad[:x1], roof_quad[:y1], roof_quad[:c1],
-        #     roof_quad[:x2], roof_quad[:y2], roof_quad[:c2],
-        #     roof_quad[:x3], roof_quad[:y3], roof_quad[:c3],
-        #     roof_quad[:x4], roof_quad[:y4], roof_quad[:c4]
-        #   )
-        # end
-        floor_quad = strip[:floor_quad]
-        if floor_quad
-          @window.draw_quad(
-            floor_quad[:x1], floor_quad[:y1], floor_quad[:c1],
-            floor_quad[:x2], floor_quad[:y2], floor_quad[:c2],
-            floor_quad[:x3], floor_quad[:y3], floor_quad[:c3],
-            floor_quad[:x4], floor_quad[:y4], floor_quad[:c4]
-          )
+    private def draw_walls
+      @walls.each do |maybe_strip|
+        maybe_strip.try do |strip|
+          # Textured wall
+          convex = SF::ConvexShape.new
+          convex.texture = @texture
+          convex.texture_rect = SF::IntRect.new(strip[:i_left], strip[:i_top], strip[:i_width], strip[:i_height])
+          convex.fill_color = strip[:c1]
+          convex.point_count = 4
+          convex[0] = SF.vector2(strip[:x1], strip[:y1])
+          convex[1] = SF.vector2(strip[:x2], strip[:y2])
+          convex[3] = SF.vector2(strip[:x3], strip[:y3])
+          convex[2] = SF.vector2(strip[:x4], strip[:y4])
+          @window.draw_entity(convex)
+
+          # roof_quad = strip[:roof_quad]
+          # if roof_quad
+          #   @window.draw_quad(
+          #     roof_quad[:x1], roof_quad[:y1], roof_quad[:c1],
+          #     roof_quad[:x2], roof_quad[:y2], roof_quad[:c2],
+          #     roof_quad[:x3], roof_quad[:y3], roof_quad[:c3],
+          #     roof_quad[:x4], roof_quad[:y4], roof_quad[:c4]
+          #   )
+          # end
+          strip[:floor_quad].try do |floor_quad|
+            @window.draw_quad(
+              floor_quad[:x1], floor_quad[:y1], floor_quad[:c1],
+              floor_quad[:x2], floor_quad[:y2], floor_quad[:c2],
+              floor_quad[:x3], floor_quad[:y3], floor_quad[:c3],
+              floor_quad[:x4], floor_quad[:y4], floor_quad[:c4]
+            )
+          end
         end
       end
     end

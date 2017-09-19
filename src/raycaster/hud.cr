@@ -1,13 +1,23 @@
 module Raycaster
   class Hud
+
+    @window : Window
+    @map : Map
+    @player : Player
+    @camera : Camera
+    @color : SF::Color
+    @map_origin : NamedTuple(x: Int32, y: Int32)
+    @player_size : Int32
+    @half_player_size : Int32
+
     def initialize(window, map, player, camera)
       @window = window
       @map = map
       @player = player
       @camera = camera
       @font_size = 24
-      @font = Gosu::Font.new(@font_size, name: "Courier New")
-      @color = Gosu::Color::WHITE
+      @font = SF::Font.from_file("assets/iosevka-slab-regular.ttf")
+      @color = SF::Color::White
       @map_scale = 10
       @map_origin = {
         x: @window.resolution[:x] - @map.size*@map_scale - 40,
