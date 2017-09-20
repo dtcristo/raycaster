@@ -20,6 +20,7 @@ module Raycaster
       @map = Map.new
       @player = Player.new(@controls, @map)
       @camera = camera = Camera.new(self, @map, @player)
+      @image = SF::Image.new(camera.resolution[:x], camera.resolution[:y], SF::Color::Black)
       # @hud = Hud.new(self, @map, @player, camera)
     end
 
@@ -29,13 +30,26 @@ module Raycaster
 
     def draw
       @window.clear(SF::Color::Black)
-      @camera.try(&.draw())
-      # @hud.try(&.draw())
-      @window.display
+
+      @image.try do |image|
+        @camera.try do |camera|
+          camera.draw()
+          # @hud.try(&.draw())
+
+          texture = SF::Texture.from_image(image)
+          sprite = SF::Sprite.new(texture)
+          sprite.scale(@resolution[:x] / camera.resolution[:x], @resolution[:y] / camera.resolution[:y])
+          @window.draw(sprite)
+
+          @window.display
+
+          @image = SF::Image.new(camera.resolution[:x], camera.resolution[:y], SF::Color::Black)
+        end
+      end
     end
 
     def draw_entity(entity)
-      @window.draw(entity)
+      # @window.draw(entity)
     end
 
     def draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4)
@@ -47,6 +61,17 @@ module Raycaster
       convex[3] = SF.vector2(x3, y3)
       convex[2] = SF.vector2(x4, y4)
       draw_entity(convex)
+    end
+
+    def draw_rect(x, y, width, height, color)
+      # rectangle = SF::RectangleShape.new(SF.vector2(width, height))
+      # rectangle.position = SF.vector2(x, y)
+      # rectangle.fill_color = color
+      # draw_entity(rectangle)
+    end
+
+    def draw_pixel(x, y, color)
+      @image.try(&.set_pixel(x, y, color))
     end
 
     def get_fps(time)

@@ -1,9 +1,10 @@
 module Raycaster
   class Camera
-    getter :rays
+    getter :rays, :resolution
 
     @window : Window
-    @spacing : Int32
+    @column_spacing : Int32
+    @row_spacing : Int32
     @map : Map
     @player : Player
     @old_player : NamedTuple(x: Float64, y: Float64, direction: Float64)
@@ -28,8 +29,11 @@ module Raycaster
 
     def initialize(window, map, player)
       @window = window
-      @resolution = { x: 160, y: 120 }
-      @spacing = @window.resolution[:x] / @resolution[:x]
+      # @resolution = { x: 160, y: 120 }
+      @resolution = { x: 320, y: 240 }
+      # @resolution = { x: 1280, y: 960 }
+      @column_spacing = @window.resolution[:x] / @resolution[:x]
+      @row_spacing = @window.resolution[:y] / @resolution[:y]
       @map = map
       @player = player
       @old_player = player_hash
@@ -38,16 +42,17 @@ module Raycaster
       @texture_width, @texture_height = 128, 128
       @texture = SF::Texture.from_file("assets/texture.png", SF.int_rect(0, 0, @texture_width, @texture_height))
       @angles = {} of Int32 => Float64
+      @floor_coordinates = {} of Tuple(Int32, Int32) => NamedTuple(distance: Float64, x: Float64, y: Float64)
       calculate_angles
       @rays = [] of Array(InspectedStep)
       @walls = [] of Wall?
-      calculate_rays_and_walls
+      # calculate_rays_and_walls
     end
 
     def draw
       # draw_roof
       draw_floor
-      calculate_rays_and_walls if player_changed?
+      # calculate_rays_and_walls if player_changed?
       draw_walls
       save_player
     end
@@ -64,38 +69,22 @@ module Raycaster
       @old_player = player_hash
     end
 
-    private def draw_roof
-      # @window.draw_quad(
-      #   0, 0,
-      #   Gosu::Color.from_hsv(45, 0.5, 1),
-      #   @window.resolution[:x], 0,
-      #   Gosu::Color.from_hsv(45, 0.5, 1),
-      #   0, @window.resolution[:y]/2,
-      #   Gosu::Color.from_hsv(45, 0.5, 0.1),
-      #   @window.resolution[:x], @window.resolution[:y]/2,
-      #   Gosu::Color.from_hsv(45, 0.5, 0.1),
-      #   0
-      # )
-    end
-
-    private def draw_floor
-      # @window.draw_quad(
-      #   0, @window.resolution[:y]/2,
-      #   Gosu::Color::BLACK,
-      #   @window.resolution[:x], @window.resolution[:y]/2,
-      #   Gosu::Color::BLACK,
-      #   0, @window.resolution[:y],
-      #   Gosu::Color::WHITE,
-      #   @window.resolution[:x], @window.resolution[:y],
-      #   Gosu::Color::WHITE,
-      #   0
-      # )
-    end
-
     private def calculate_angles
+      mid = @resolution[:y] / 2
       (0..@resolution[:x]-1).each do |column|
-        x = column.to_f / @resolution[:x] - 0.5
-        @angles[column] = Math.atan2(x, @focal_length)
+        x_scaled = column.to_f / @resolution[:x] - 0.5
+        relative_angle = Math.atan2(x_scaled, @focal_length)
+        @angles[column] = relative_angle
+        (mid..@resolution[:y]-1).each do |row|
+          wall_height = 2 * (row.to_f - mid)
+          next if wall_height <= 0
+          relative_y = -@resolution[:y] / wall_height
+          distance = -relative_y / Math.cos(relative_angle)
+          relative_x = distance * Math.sin(relative_angle)
+          @floor_coordinates[{column, row}] = {
+            distance: distance, x: relative_x, y: relative_y
+          }
+        end
       end
     end
 
@@ -175,8 +164,8 @@ module Raycaster
     end
 
     private def hit_to_strip(column, relative_angle, hit) : Wall
-      left = (column * @spacing).floor
-      width = @spacing.ceil
+      left = (column * @column_spacing).floor
+      width = @column_spacing.ceil
       wall = project(hit[:height], relative_angle, hit[:distance])
       brightness = ((@range - hit[:distance]) / @range) * (1 - 0.2) + 0.2
       # brightness = 1
@@ -281,6 +270,54 @@ module Raycaster
               floor_quad[:x4], floor_quad[:y4], floor_quad[:c4]
             )
           end
+        end
+      end
+    end
+
+    def draw_roof
+     @window.draw_quad(
+       0, 0,
+       Gosu::Color.from_hsv(45, 0.5, 1),
+       @window.resolution[:x], 0,
+       Gosu::Color.from_hsv(45, 0.5, 1),
+       0, @window.resolution[:y] / 2,
+       Gosu::Color.from_hsv(45, 0.5, 0.1),
+       @window.resolution[:x], @window.resolution[:y] / 2,
+       Gosu::Color.from_hsv(45, 0.5, 0.1)
+     )
+    end
+
+    def draw_floor
+      mid = @resolution[:y] / 2
+      bottom = @resolution[:y] - 1
+      0.upto(@resolution[:x]-1).each do |column|
+        bottom.downto(mid).each do |row|
+          floor = @floor_coordinates.fetch({column, row}, nil)
+          if floor.nil?
+            @window.draw_pixel(
+              column, row, SF::Color::Green
+            )
+            next
+          end
+          height = @map.get(
+          @player.x + floor[:x], @player.y + floor[:y]
+          )
+          if height > 0
+            @window.draw_pixel(
+              column, row, SF::Color::Blue
+            )
+            break
+          else
+            @window.draw_pixel(
+              column, row, SF::Color::Red
+            )
+          end
+
+         # @floor_coordinates[[column, row]] = {
+         #   distance: distance, x: relative_x, y: relative_y
+         # }
+         # point = @floor_coordinates[[column, row]]
+
         end
       end
     end
