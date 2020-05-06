@@ -1,10 +1,10 @@
 <div align="center">
   <h1>🔆 Raycaster</h1>
   <p>
-    <strong
-      >Experimental ray casting renderer written in Ruby using
-      <a href="https://www.libgosu.org/">Gosu</a>.</strong
-    >
+    <strong>
+      Experimental ray casting renderer written in Ruby with
+      <a href="https://www.libgosu.org/">Gosu</a>
+    </strong>
   </p>
   <img src="assets/screenshot.png" />
 </div>
