@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🔆 Raycaster</h1>
+  <h1>🔆 raycaster</h1>
   <p>
     <strong>
       Experimental ray casting renderer written in Ruby with
