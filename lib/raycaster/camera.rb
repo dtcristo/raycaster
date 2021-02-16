@@ -12,7 +12,7 @@ module Raycaster
       @range = 10
       @focal_length = 0.8
       @texture = Gosu::Image.new(
-        File.expand_path('../../assets/texture.png', __FILE__), retro: true
+        File.expand_path('../../../assets/texture.png', __FILE__), retro: true
       )
       calculate_angles
       calculate_rays_and_walls

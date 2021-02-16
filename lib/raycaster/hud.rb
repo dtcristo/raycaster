@@ -59,10 +59,10 @@ module Raycaster
         x = @player.x.round(1)
         y = @player.y.round(1)
         angle = Gosu.radians_to_degrees(@player.direction).round
-        @font.draw("fps: #{Gosu.fps}", 0, 0, 1, 1, 1, @color)
-        @font.draw("x: #{x}", 0, @font_size, 1, 1, 1, @color)
-        @font.draw("y: #{y}", 0, 2*@font_size, 1, 1, 1, @color)
-        @font.draw("direction: #{angle}°", 0, 3*@font_size, 1, 1, 1, @color)
+        @font.draw_text("fps: #{Gosu.fps}", 0, 0, 1, 1, 1, @color)
+        @font.draw_text("x: #{x}", 0, @font_size, 1, 1, 1, @color)
+        @font.draw_text("y: #{y}", 0, 2*@font_size, 1, 1, 1, @color)
+        @font.draw_text("direction: #{angle}°", 0, 3*@font_size, 1, 1, 1, @color)
       end
     end
   end
